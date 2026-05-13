@@ -87,7 +87,7 @@ class PostagemController extends Controller
         ]);
 
         
-       return redirect()->route('perfil.show')
+       return redirect()->route('post.index')
         ->with('success', 'Produto publicado com sucesso!');
     }
 
