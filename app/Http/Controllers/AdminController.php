@@ -26,12 +26,18 @@ class AdminController extends Controller
         return view('admin.usuarios', compact('usuarios'));
     }
  
-    public function banirUsuario(User $user)
+    public function banirUsuario($id)
     {
+        $user = User::find($id);
+
+        if (!$user) {
+            return back()->with('erro', 'Esse usuário já foi removido. Atualize a página.');
+        }
+
         if ($user->role === 'admin') {
             return back()->with('erro', 'Não é possível banir um administrador.');
         }
- 
+
         $user->delete();
         return back()->with('sucesso', "Usuário {$user->name} removido com sucesso.");
     }
@@ -39,21 +45,34 @@ class AdminController extends Controller
     public function postagens(Request $request)
     {
         $query = Postagem::with('user')->latest();
- 
+
         if ($request->filled('selo')) {
             $query->where('selo', $request->selo);
         }
- 
+
         if ($request->filled('busca')) {
-            $query->where('nome', 'like', '%' . $request->busca . '%');
+            $termo = '%' . $request->busca . '%';
+
+            $query->where(function ($q) use ($termo) {
+                $q->where('nome', 'like', $termo)
+                ->orWhereHas('user', function ($u) use ($termo) {
+                    $u->where('name', 'like', $termo);
+                });
+            });
         }
- 
+
         $postagens = $query->get();
         return view('admin.postagens', compact('postagens'));
     }
  
-    public function excluirPostagem(Postagem $postagem)
+    public function excluirPostagem($id)
     {
+        $postagem = Postagem::find($id);
+
+        if (!$postagem) {
+            return back()->with('erro', 'Essa postagem já foi excluída. Atualize a página.');
+        }
+
         $postagem->delete();
         return back()->with('sucesso', 'Postagem excluída com sucesso.');
     }
